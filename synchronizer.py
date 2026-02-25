@@ -96,7 +96,7 @@ class SyncApp:
         top.title("DIS File Manager")
         top.geometry("400x400")
 
-        tk.Label(top, text="Select files from :Logs/", font=("Arial", 10, "bold")).pack(pady=5)
+        tk.Label(top, text="Select files from Logs/", font=("Arial", 10, "bold")).pack(pady=5)
 
         # Scrollable Listbox
         frame = tk.Frame(top)
