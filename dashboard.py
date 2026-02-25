@@ -4,32 +4,49 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import os
 import glob
+from pathlib import Path
 
 # Set the page layout to wide
 st.set_page_config(layout="wide", page_title="DIS Telemetry Viewer")
 
-st.title("Shell Eco-marathon Telemetry")
+st.title("Shell Eco-marathon Telemetry Viewer")
 
 # --- SIDEBAR: CONTROLS ---
 st.sidebar.header("Data Management")
 
 st.sidebar.info("Logs are automatically synced from GitHub. To add new logs, run the local sync script.")
 
-# 1. FILE SELECTOR
-# Look for CSVs directly in the repo's 'logs' folder
-# (Make sure you create a folder named 'logs' in your GitHub repo!)
-log_files = glob.glob("logs/*.csv")
+# 1. LOG CATEGORY & FILE SELECTOR
+SCRIPT_DIR = Path(__file__).parent.absolute()
+LOGS_DIR = SCRIPT_DIR / "logs"
+
+log_categories = {
+    "Processed (Final)": LOGS_DIR / "final",
+    "Raw (Unprocessed)": LOGS_DIR / "raw",
+    "Saved (Important)": LOGS_DIR / "saved",
+}
+
+selected_category = st.sidebar.selectbox(
+    "Select Log Category:", 
+    options=list(log_categories.keys()),
+    index=0
+)
+
+current_dir = log_categories[selected_category]
+
+# Get files using pathlib
+log_files = list(current_dir.glob("*.csv")) if current_dir.exists() else []
 
 if not log_files:
-    st.info("No logs found in the GitHub repository's 'logs' folder.")
+    st.info(f"No logs found in {selected_category}.")
     st.stop()
 
-# Sort by newest first 
-# Note: In the cloud, getmtime might be the time the server cloned the repo. 
-# It's usually safer to sort alphabetically if your logs have timestamps in the filename (e.g., log_20260224.csv)
-log_files.sort(reverse=True) 
+# Sort by filename (descending)
+log_files.sort(key=lambda p: p.name, reverse=True)
 
-selected_file = st.sidebar.selectbox("Select Test Run:", log_files)
+file_map = {p.name: p for p in log_files}
+selected_filename = st.sidebar.selectbox("Select Test Run:", list(file_map.keys()))
+selected_file = file_map[selected_filename]
 
 # --- MAIN AREA: DATA VISUALIZATION ---
 
