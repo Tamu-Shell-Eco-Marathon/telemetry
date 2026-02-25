@@ -6,15 +6,14 @@ import os
 from pathlib import Path
 from datetime import datetime
 import shutil
+import time
 
 # --- PATH SETUP (Relative to this script) ---
 # This ensures it works on ANY computer
 SCRIPT_DIR = Path(__file__).parent.absolute()
-STAGING_DIR = SCRIPT_DIR / "staging_logs"
 REPO_LOGS_DIR = SCRIPT_DIR / "logs"
 
 # Ensure directories exist
-STAGING_DIR.mkdir(exist_ok=True)
 REPO_LOGS_DIR.mkdir(exist_ok=True)
 
 class SyncApp:
@@ -31,12 +30,8 @@ class SyncApp:
         self.btn_view.pack(pady=5, fill='x', padx=50)
 
         # 2. Download Button
-        self.btn_download = tk.Button(root, text="Download Logs to Staging (Timestamped)", command=self.download_logs)
+        self.btn_download = tk.Button(root, text="Download All Logs", command=self.download_logs)
         self.btn_download.pack(pady=5, fill='x', padx=50)
-
-        # 3. Push to GitHub
-        self.btn_push = tk.Button(root, text="Push Staging to GitHub", command=self.push_to_github)
-        self.btn_push.pack(pady=5, fill='x', padx=50)
 
         # 4. Clear DIS (Red Button)
         self.btn_clear = tk.Button(root, text="⚠️ Clear Logs on DIS", fg="red", command=self.clear_dis)
@@ -191,17 +186,34 @@ class SyncApp:
         for filename in files:
             ts = datetime.now().strftime("%Y%m%d_%H%M%S")
             local_name = f"{ts}_{filename}"
-            local_path = STAGING_DIR / local_name
+            local_path = REPO_LOGS_DIR / local_name
             remote_path = f":Logs/{filename}"
 
             self.log(f"Downloading {filename}...")
-            try:
-                subprocess.run(["mpremote", "fs", "cp", remote_path, str(local_path)], check=True)
+            
+            success = False
+            for attempt in range(3):
+                try:
+                    subprocess.run(["mpremote", "fs", "cp", remote_path, str(local_path)], check=True)
+                    success = True
+                    break
+                except subprocess.CalledProcessError:
+                    self.log(f"Attempt {attempt+1} failed. Retrying in 4s...")
+                    time.sleep(4)
+
+            if success:
                 if delete:
                     self.log(f"Deleting {filename}...")
-                    subprocess.run(["mpremote", "fs", "rm", remote_path], check=True)
-            except subprocess.CalledProcessError as e:
-                self.log(f"Error with {filename}: {e}")
+                    try:
+                        subprocess.run(["mpremote", "fs", "rm", remote_path], check=True)
+                    except subprocess.CalledProcessError as e:
+                        self.log(f"Error deleting {filename}: {e}")
+            else:
+                self.log(f"Error: Could not download {filename} after 3 attempts.")
+            
+            # Brief pause between files to let the serial port reset
+            time.sleep(0.001)
+
         self.log("Operation complete.")
 
     def batch_delete(self, files):
@@ -215,14 +227,30 @@ class SyncApp:
         self.log("Deletion complete.")
 
     def download_logs(self):
-        # TODO: Run 'mpremote fs cp', then loop through downloaded files 
-        # and rename them using datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.log("Downloading and timestamping...")
-
-    def push_to_github(self):
-        # TODO: Move files from STAGING_DIR to REPO_LOGS_DIR
-        # Run subprocess git add, git commit, git push
-        self.log("Pushing to cloud...")
+        self.log("Checking for files on DIS...")
+        try:
+            result = subprocess.run(["mpremote", "fs", "ls", ":Logs/"], capture_output=True, text=True)
+            if result.returncode != 0:
+                self.log(f"Error listing files: {result.stderr.strip()}")
+                return
+            
+            output = result.stdout.strip()
+            files = []
+            for line in output.splitlines():
+                parts = line.split()
+                if parts and parts[0] == "ls": continue
+                if len(parts) >= 2:
+                    filename = parts[-1]
+                    if filename not in (".", ".."):
+                        files.append(filename)
+            
+            if not files:
+                self.log("No files found to download.")
+                return
+            
+            self.batch_process(files, delete=False)
+        except Exception as e:
+            self.log(f"Error: {e}")
 
     def clear_dis(self):
         # Ask for confirmation before deleting!
