@@ -131,7 +131,7 @@ try:
                     }
 
                 fig.update_layout(**layout_update)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
             else:
                 st.info("No signals selected. Use the dropdowns above to add traces to this plot.")
 
