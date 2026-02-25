@@ -11,10 +11,10 @@ import time
 # --- PATH SETUP (Relative to this script) ---
 # This ensures it works on ANY computer
 SCRIPT_DIR = Path(__file__).parent.absolute()
-REPO_LOGS_DIR = SCRIPT_DIR / "logs"
+REPO_LOGS_DIR = SCRIPT_DIR / "logs" / "raw"
 
 # Ensure directories exist
-REPO_LOGS_DIR.mkdir(exist_ok=True)
+REPO_LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
 class SyncApp:
     def __init__(self, root):
