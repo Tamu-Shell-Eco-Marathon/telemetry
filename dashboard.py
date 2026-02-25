@@ -83,7 +83,7 @@ try:
             c1, c2 = st.columns([0.9, 0.1])
             
             with c1:
-                col_y1, col_y2 = st.columns(2)
+                col_y1, col_y2, col_norm = st.columns([0.4, 0.4, 0.2])
                 with col_y1:
                     selected_signals_y1 = st.multiselect(
                         "Left Axis",
@@ -96,6 +96,10 @@ try:
                         options=all_signals,
                         key=f"plot_{pid}_signals_y2",
                     )
+                with col_norm:
+                    st.write("")
+                    st.write("")
+                    normalize = st.checkbox("Norm", key=f"norm_{pid}", help="Normalize signals to 0-1 range")
             
             if c2.button("❌", key=f"btn_del_{pid}"):
                 plots_to_remove.append(pid)
@@ -103,13 +107,38 @@ try:
             if selected_signals_y1 or selected_signals_y2:
                 fig = go.Figure()
 
+                def add_trace(signal, yaxis_name):
+                    y_data = df[signal]
+                    custom_data = None
+                    hover_template = None
+
+                    if normalize:
+                        min_val = y_data.min()
+                        max_val = y_data.max()
+                        if max_val != min_val:
+                            y_data = (y_data - min_val) / (max_val - min_val)
+                        else:
+                            y_data = y_data - min_val
+                        
+                        custom_data = df[signal]
+                        hover_template = "%{y:.2f} (Norm)<br>Val: %{customdata:.2f}"
+
+                    fig.add_trace(go.Scatter(
+                        x=df['Time'], 
+                        y=y_data, 
+                        name=signal, 
+                        yaxis=yaxis_name,
+                        customdata=custom_data,
+                        hovertemplate=hover_template
+                    ))
+
                 # Add traces for Left Axis
                 for signal in selected_signals_y1:
-                    fig.add_trace(go.Scatter(x=df['Time'], y=df[signal], name=signal, yaxis="y1"))
+                    add_trace(signal, "y1")
 
                 # Add traces for Right Axis
                 for signal in selected_signals_y2:
-                    fig.add_trace(go.Scatter(x=df['Time'], y=df[signal], name=signal, yaxis="y2"))
+                    add_trace(signal, "y2")
                 
                 # Define layout update dictionary
                 layout_update = {
