@@ -35,7 +35,7 @@ def process_logs():
 
     for file_path in log_files:
         # 1. Check if file is already processed based on filename
-        if file_path.stem.endswith("P"):
+        if file_path.stem.startswith("P_"):
             continue
 
         print(f"Processing {file_path.name}...")
@@ -66,8 +66,8 @@ def process_logs():
             # ---------------------------------------------------------
 
             # 4. Save and Rename
-            # Prepend 'P' to the filename to indicate it is processed
-            new_filename = f"P{file_path.stem}{file_path.suffix}"
+            # Prepend 'P_' to the filename to indicate it is processed
+            new_filename = f"P_{file_path.stem}{file_path.suffix}"
             new_path = FINAL_LOGS_DIR / new_filename
 
             df.to_csv(new_path, index=False)
