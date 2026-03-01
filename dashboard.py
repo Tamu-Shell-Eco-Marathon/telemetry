@@ -48,6 +48,7 @@ selected_filename = st.sidebar.selectbox("Select Test Run:", list(file_map.keys(
 selected_file = file_map[selected_filename]
 
 # --- MAIN AREA: DATA VISUALIZATION ---
+st.header(f"{selected_filename}")
 
 @st.cache_data
 def load_data(filepath):
