@@ -8,6 +8,12 @@ import pandas as pd
 import os
 from pathlib import Path
 
+# Columns we expect to see in the raw log files
+raw_cols = ["Time","State","Ticks","Speed","Target","SmartCruise","Volts","Amps","PowerInst","Throttle","Duty","RPM"]
+
+# These are the signals that we calculate
+new_cols = ["Efficiency Instant*", "Energy Cumulative*", "Miles*", "Acceleration*"]
+
 # Define the directory containing the logs
 SCRIPT_DIR = Path(__file__).parent.absolute()
 RAW_LOGS_DIR = SCRIPT_DIR / "logs" / "raw"
@@ -47,8 +53,8 @@ def process_logs():
             # If the columns already exist, we might want to skip or re-process.
             # ---------------------------------------------------------
             # TODO: Define the columns you expect to see in a processed file
-            # expected_cols = ['PowerAccumulated', 'Distance']
-            # if all(col in df.columns for col in expected_cols):
+            # raw_cols = ['PowerAccumulated', 'Distance']
+            # if all(col in df.columns for col in raw_cols):
             #     print(f"  - Columns already exist. Skipping calculation.")
             # else:
             #     pass # Proceed to calculation
