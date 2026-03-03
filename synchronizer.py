@@ -184,13 +184,25 @@ class SyncApp:
     def batch_process(self, files, delete):
         self.log(f"Processing {len(files)} files...")
         for filename in files:
-            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-            local_name = f"{ts}_{filename}"
-            local_path = REPO_LOGS_DIR / local_name
-            remote_path = f":Logs/{filename}"
+            date_code = datetime.now().strftime("%b%d")
+            base_name = f"{date_code}_{filename}"
+            local_path = REPO_LOGS_DIR / base_name
 
-            self.log(f"Downloading {filename}...")
-            
+            # Handle potential filename collisions by appending _1, _2, etc.
+            if local_path.exists():
+                counter = 1
+                stem = local_path.stem
+                suffix = local_path.suffix
+                while True:
+                    new_name = f"{stem}_{counter}{suffix}"
+                    new_path = REPO_LOGS_DIR / new_name
+                    if not new_path.exists():
+                        local_path = new_path
+                        break
+                    counter += 1
+
+            remote_path = f":Logs/{filename}"
+            self.log(f"Downloading {filename} as {local_path.name}...")
             success = False
             for attempt in range(3):
                 try:
@@ -254,9 +266,33 @@ class SyncApp:
 
     def clear_dis(self):
         # Ask for confirmation before deleting!
-        if messagebox.askyesno("Warning", "Are you sure you want to permanently delete all logs on the DIS?"):
-            # TODO: Run 'mpremote fs rm'
-            self.log("Clearing DIS...")
+        if not messagebox.askyesno("Warning", "Are you sure you want to permanently delete all logs on the DIS?"):
+            return
+
+        self.log("Listing files to delete...")
+        try:
+            result = subprocess.run(["mpremote", "fs", "ls", ":Logs/"], capture_output=True, text=True)
+            if result.returncode != 0:
+                self.log(f"Error listing files: {result.stderr.strip()}")
+                return
+
+            output = result.stdout.strip()
+            files = []
+            for line in output.splitlines():
+                parts = line.split()
+                if parts and parts[0] == "ls": continue
+                if len(parts) >= 2:
+                    filename = parts[-1]
+                    if filename not in (".", ".."):
+                        files.append(filename)
+
+            if not files:
+                self.log("No files found to delete.")
+                return
+
+            self.batch_delete(files)
+        except Exception as e:
+            self.log(f"Error: {e}")
 
 if __name__ == "__main__":
     root = tk.Tk()
