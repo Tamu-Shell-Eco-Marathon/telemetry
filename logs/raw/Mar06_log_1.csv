@@ -1,0 +1,4 @@
+Time,State,Ticks,Speed,Target,SmartCruise,Volts,Amps,PowerInst,Throttle,Duty,RPM
+1.05,DRIVE,76506,0.00,15.07,0,51.17,0.00,0.00,0,0,0
+2.06,DRIVE,76506,0.00,15.13,0,51.17,0.00,0.00,0,0,0
+3.07,DRIVE,76506,0.00,15.19,0,51.19,0.00,0.00,0,0,0
