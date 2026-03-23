@@ -1,0 +1,3 @@
+Time,State,Ticks,Speed,Target,SmartCruise,Volts,Amps,PowerInst,Throttle,Duty,RPM
+1.01,TEST,162193,0.00,16.40,0,51.50,0.00,0.00,0,0,0
+2.02,TEST,162193,0.00,16.40,0,51.50,0.00,0.00,0,0,0
