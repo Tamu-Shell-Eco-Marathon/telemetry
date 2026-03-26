@@ -2,17 +2,17 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import os
-import glob
 from pathlib import Path
 
-# Set the page layout to wide
-st.set_page_config(layout="wide", page_title="DIS Telemetry Viewer")
+TICKS_PER_MILE = 174280
 
-st.title("Shell Eco-marathon Telemetry Viewer")
+# Set the page layout to wide
+st.set_page_config(layout="wide", page_title="DIS Telescope")
+
+st.subheader("🔭 DIS Telescope")
 
 # --- SIDEBAR: CONTROLS ---
-st.sidebar.header("Data Management")
+st.sidebar.header("Telescope")
 
 
 # 1. LOG CATEGORY & FILE SELECTOR
@@ -20,13 +20,15 @@ SCRIPT_DIR = Path(__file__).parent.absolute()
 LOGS_DIR = SCRIPT_DIR / "logs"
 
 log_categories = {
-    "Final": LOGS_DIR / "final",
-    "Raw": LOGS_DIR / "raw",
-    "Saved": LOGS_DIR / "saved",
-}
+    p.name: p for p in sorted(LOGS_DIR.iterdir()) if p.is_dir()
+} if LOGS_DIR.exists() else {}
+
+if not log_categories:
+    st.info("No log categories found. Create a subdirectory in logs/.")
+    st.stop()
 
 selected_category = st.sidebar.selectbox(
-    "Select Log Category:", 
+    "Select Log Category:",
     options=list(log_categories.keys()),
     index=0
 )
@@ -47,24 +49,46 @@ file_map = {p.name: p for p in log_files}
 selected_filename = st.sidebar.selectbox("Select Test Run:", list(file_map.keys()))
 selected_file = file_map[selected_filename]
 
-# --- MAIN AREA: DATA VISUALIZATION ---
-st.header(f"{selected_filename}")
-
 @st.cache_data
 def load_data(filepath):
     return pd.read_csv(filepath)
 
 try:
     df = load_data(selected_file)
-    
+
     if 'Time' not in df.columns:
         df['Time'] = df.index
 
+    # --- Sidebar: Log Summary ---
+    st.sidebar.markdown("---")
+    st.sidebar.subheader(selected_filename)
+
+    duration_s = df['Time'].iloc[-1] - df['Time'].iloc[0]
+    minutes, seconds = divmod(duration_s, 60)
+    summary = f"**Duration:** {int(minutes)}m {seconds:.1f}s"
+
+    if 'Ticks' in df.columns:
+        delta_ticks = int(df['Ticks'].iloc[-1] - df['Ticks'].iloc[0])
+        distance_mi = delta_ticks / TICKS_PER_MILE
+        summary += f"  \n**Distance:** {distance_mi:.3f} mi ({delta_ticks:,} ticks)"
+
+    if 'State' in df.columns:
+        summary += f"  \n**State:** {df['State'].iloc[0]}"
+
+    st.sidebar.markdown(summary)
+
+    st.sidebar.download_button(
+        "Download CSV",
+        data=df.to_csv(index=False),
+        file_name=selected_filename,
+        mime="text/csv",
+    )
+
     # --- Session State Management ---
     if 'plot_ids' not in st.session_state:
-        st.session_state['plot_ids'] = []
+        st.session_state['plot_ids'] = [0]
     if 'next_plot_id' not in st.session_state:
-        st.session_state['next_plot_id'] = 0
+        st.session_state['next_plot_id'] = 1
 
     all_signals = [col for col in df.columns if col != 'Time']
 
