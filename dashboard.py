@@ -192,7 +192,7 @@ try:
             height=300 * rows, margin=dict(l=0, r=0, t=40, b=20), hovermode="x unified", template="plotly_dark",
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="container")
 
     if plots_to_remove:
         for pid in plots_to_remove:
