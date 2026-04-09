@@ -1,0 +1,4 @@
+Time,State,Ticks,Speed,Target,SmartCruise,Volts,Amps,PowerInst,Throttle,Duty,RPM
+1.00,RACE,544,0.00,16.40,0,50.38,0.00,0.00,0,0,0
+2.00,RACE,544,0.00,16.40,0,50.40,0.00,0.00,0,0,0
+3.01,RACE,544,0.00,16.41,0,50.41,0.00,0.00,0,0,0
